@@ -3,6 +3,9 @@ uuid = "5d5a6c9c-9f95-4130-ad09-9a341f9b2021"
 authors = ["tcarion <tristan.carion@gmail.com> and contributors"]
 version = "0.1.0"
 
+[deps]
+Proj4 = "9a7e659c-8ee8-5706-894e-f68f43bc57ea"
+
 [compat]
 julia = "1"
 
