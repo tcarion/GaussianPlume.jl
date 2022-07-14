@@ -1,9 +1,13 @@
+abstract type AbstractWind end
+mutable struct WindAzimuth <: AbstractWind
+    speed::Real
+    azimuth::Real
+end
 
 struct PointSource
     lon::Real
     lat::Real
-    # TODO : use the same wind structures as with ATP45
-    # wind::Union{WindAzimuth, Wind...}
+    wind::WindAzimuth
     params::GaussianPlumeParams
 end
 
@@ -13,11 +17,9 @@ Return the final longitude latitude point and the concentration a this location 
 """
 function concentration(x, y, z, source::PointSource)
     conc = concentration(x, y, z, source.params)
-
-    # TODO : get the azimuth from the pointsource struct
-    azimuth = 45
+    azimuth = source.wind.azimuth
     downwind = horizontal_walk(source.lon, source.lat, x, azimuth)
-    lateral_direction = 111
+    lateral_direction = azimuth + 90
     final = horizontal_walk(downwind, y, azimuth, lateral_direction)
     [final, conc]
 end

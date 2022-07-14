@@ -1,3 +1,5 @@
+using DelimitedFiles
+
 @enum Terrain Rural Urban
 @enum StabilityClass A B C D E F
 
@@ -20,9 +22,67 @@ Set{StabilityClass} with 2 elements:
  D
 """
 function pasquill_gifford(criteria::PasquillGiffordCriteria, windspeed::Real)
-    # TODO (see Table 2.1 of reference book)
-    # using DelimitedFiles ??
-    Set([A, B])
+    if windspeed < 2
+        if criteria == Strong
+            Set([A])
+        elseif criteria == Moderate
+            Set([A, B])
+        elseif criteria == Slight
+            Set([B])
+        elseif criteria == Cloudy
+            Set([E])
+        elseif criteria == Clear
+            Set([F])
+        end
+    elseif 2 <= windspeed < 3
+        if criteria == Strong
+            Set([A, B])
+        elseif criteria == Moderate
+            Set([B])
+        elseif criteria == Slight
+            Set([C])
+        elseif criteria == Cloudy
+            Set([E])
+        elseif criteria == Clear
+            Set([F])
+        end
+    elseif 3 <= windspeed < 5
+        if criteria == Strong
+            Set([B])
+        elseif criteria == Moderate
+            Set([B, C])
+        elseif criteria == Slight
+            Set([C])
+        elseif criteria == Cloudy
+            Set([D])
+        elseif criteria == Clear
+            Set([E])
+        end
+    elseif 5 <= windspeed <= 6
+        if criteria == Strong
+            Set([C])
+        elseif criteria == Moderate
+            Set([C, D])
+        elseif criteria == Slight
+            Set([D])
+        elseif criteria == Cloudy
+            Set([D])
+        elseif criteria == Clear
+            Set([D])
+        end
+    else
+        if criteria == Strong
+            Set([C])
+        elseif criteria == Moderate
+            Set([D])
+        elseif criteria == Slight
+            Set([D])
+        elseif criteria == Cloudy
+            Set([D])
+        elseif criteria == Clear
+            Set([D])
+        end
+    end
 end
 
 """
@@ -33,16 +93,48 @@ Given the `terrain` and the `stability`, return the three coefficients a, b, c f
 # Example
 ```jl
 julia> getcoeff(Rural, A)
-((a = 0.22, b = 0.0001, c = -0.5), (a = 0.2, b = 0, c = -0.5))
+((a = 0.22, b = 0.0001, c = -0.5), (a = 0.2, b = 0, c = 1.0))
 ```
 """
 function getcoeff(terrain::Terrain, stability::StabilityClass)
-    # TODO
-    # Get the a, b c coefficients from the Briggs_Dispersion_Parameters.xls file (maybe convert it to CSV)
-    (
-        (a = 0.22, b = 0.0001, c = -0.5), # coefficients for σ_y
-        (a = 0.2, b = 0, c = -0.5) # coefficients for σ_z
-    )
+    data = DelimitedFiles.readdlm("delim_file.txt", Float64)
+    if terrain == Rural
+        if stability == A
+            sigycol = 1
+            sigzcol = 7
+        elseif stability == B
+            sigycol = 2
+            sigzcol = 8
+        elseif stability == C
+            sigycol = 3
+            sigzcol = 9
+        elseif stability == D 
+            sigycol = 4
+            sigzcol = 10
+        elseif stability == E
+            sigycol = 5
+            sigzcol = 11
+        elseif stability == F
+            sigycol = 6
+            sigzcol = 12
+        end
+    elseif terrain == Urban
+        if stability == A || stability == B
+            sigycol = 13
+            sigzcol = 17
+        elseif stability == C
+            sigycol = 14
+            sigzcol = 18
+        elseif stability == D
+            sigycol = 15
+            sigzcol = 19
+        elseif stability == E || stability == F
+            sigycol = 16
+            sigzcol = 20
+        end
+    end
+    nkeys = (:a, :b, :c)
+    ((; zip(nkeys, data[:, sigycol])...), (; zip(nkeys, data[:, sigzcol])...))
 end
 
 """
