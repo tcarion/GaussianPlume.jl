@@ -4,6 +4,7 @@ authors = ["tcarion <tristan.carion@gmail.com> and contributors"]
 version = "0.1.0"
 
 [deps]
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 Proj4 = "9a7e659c-8ee8-5706-894e-f68f43bc57ea"
 
 [compat]

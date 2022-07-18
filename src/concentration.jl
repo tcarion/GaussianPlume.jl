@@ -1,7 +1,24 @@
-using DelimitedFiles
-
 @enum Terrain Rural Urban
 @enum StabilityClass A B C D E F
+
+const StabilityClasses = AbstractSet{StabilityClass}
+
+"""
+    $(TYPEDSIGNATURES)
+Define the stability classes for the model according to Pasquill and Gifford (Pasquill, 1961; Gifford, 1961).
+If multiple classes are defined, the average result for each class is considered.
+
+# Example
+```jl
+julia> Stabilities(:A, :B)
+Set{StabilityClass} with 2 elements:
+  GaussianPlume.A
+  GaussianPlume.B
+```
+"""
+function Stabilities(stabs::Vararg{Union{String, Symbol}}) :: StabilityClasses
+    Set(tostab(stabs...))
+end
 
 """
     PasquillGiffordCriteria
@@ -97,7 +114,6 @@ julia> getcoeff(Rural, A)
 ```
 """
 function getcoeff(terrain::Terrain, stability::StabilityClass)
-    data = DelimitedFiles.readdlm("delim_file.txt", Float64)
     if terrain == Rural
         if stability == A
             sigycol = 1
@@ -134,7 +150,7 @@ function getcoeff(terrain::Terrain, stability::StabilityClass)
         end
     end
     nkeys = (:a, :b, :c)
-    ((; zip(nkeys, data[:, sigycol])...), (; zip(nkeys, data[:, sigzcol])...))
+    ((; zip(nkeys, BRIGGS_COEFS[:, sigycol])...), (; zip(nkeys, BRIGGS_COEFS[:, sigzcol])...))
 end
 
 """
@@ -146,22 +162,24 @@ Return the function for calculating the dispersion parameters with respect to x 
 disp_function(a, b, c) = x -> a * x * (1 + b*x)^c
 
 """
-    ReleaseParams
+    $(TYPEDEF)
 Structure related to the release conditions
+
+    $(FIELDS)
 """
 Base.@kwdef mutable struct ReleaseParams
-    # Effective source height [m]
+    "Effective source height [m]"
     h::Real = 1.
-    # Emission rate [g/s]
+    "Emission rate [g/s]"
     Q::Real = 1.
-    # Wind speed [m/s]
+    "Wind speed [m/s]"
     u::Real = 5.
 end
 
 Base.@kwdef mutable struct DispersionParams
-    # Horizontal dispersion parameter [m]
+    "Horizontal dispersion parameter [m]"
     σ_y::Real = 2.15
-    # Vertical dispersion parameter [m]
+    "Vertical dispersion parameter [m]"
     σ_z::Real = 2.15
 end
 
@@ -184,16 +202,19 @@ Base.:+(d1::DispersionParams, d2::DispersionParams) = DispersionParams(d1.σ_y +
 Base.:/(d1::DispersionParams, x::Real) = DispersionParams(d1.σ_y / x, d1.σ_z / x) 
 
 """
-    Params
+    $(TYPEDEF)
+Structure related to the release conditions
+
+    $(FIELDS)
 """
 Base.@kwdef mutable struct GaussianPlumeParams
-    # release parameters
+    "release parameters"
     release::ReleaseParams = ReleaseParams()
-    # release parameters
+    "terrain (Urban/Rural)"
     terrain::Terrain = Rural
-    # set of stability classes
-    stabilities::Set{<:StabilityClass} = Set([A])
-    # if ground reflection is considered
+    "set of stability classes"
+    stabilities::StabilityClasses = Set([A])
+    "if ground reflection is considered"
     reflection::Bool = true
 end
 GaussianPlumeParams(release::ReleaseParams, terrain::Terrain, criteria::PasquillGiffordCriteria) = GaussianPlumeParams(release, terrain, pasquill_gifford(criteria, release.u))
@@ -214,7 +235,7 @@ end
 # concentration(y::Real, zs::AbstractVector, release::ReleaseParams; reflection = false) = concentration.(y, zs, Ref(release), reflection = reflection)
 # concentration(ys::AbstractVector, zs::AbstractVector, release::ReleaseParams; reflection = false) = [concentration(y, z, release, reflection = reflection) for y in ys, z in zs]
 
-function concentration(x::Real, y::Real, z::Real, release::ReleaseParams, terrain::Terrain, stabilities::Set{<:StabilityClass}; reflection = true)
+function concentration(x::Real, y::Real, z::Real, release::ReleaseParams, terrain::Terrain, stabilities::StabilityClasses; reflection = true)
     disps = DispersionParams.(x, terrain, stabilities)
     # If more than 1 stability, we take the average of the dispersion parameters for each class
     disp = sum(disps) / length(disps)
@@ -222,11 +243,11 @@ function concentration(x::Real, y::Real, z::Real, release::ReleaseParams, terrai
 end
 
 """
-    concentration(x::Real, y::Real, z::Real, params::Params)
-Return the concentration in [g m^{-3}] at some point given the conditions stated in `params`
-`x` is the downwind distance from the point source.
-`y` is the horizontal distance perpendicular to the wind.
-`z` is the vertical distance from the point source.
+    $(TYPEDSIGNATURES)
+Return the concentration in [g m^{-3}] at some point given the conditions stated in `params`.
+- `x` is the downwind distance from the point source.
+- `y` is the horizontal distance perpendicular to the wind.
+- `z` is the vertical distance from the point source.
 """
 concentration(x::Real, y::Real, z::Real, params::GaussianPlumeParams) = 
     concentration(x, y, z, params.release, params.terrain, params.stabilities; reflection = params.reflection)
@@ -236,4 +257,12 @@ function _destruct(p::ReleaseParams)
         getfield(p, i)
     end
 end
-    
+
+function tostab(stabs::Vararg{Symbol})
+    [getproperty(@__MODULE__, s) for s in collect(stabs)]
+end
+
+function tostab(stabs::Vararg{AbstractString})
+    sstabs = Symbol.(stabs)
+    tostab(sstabs...)
+end
