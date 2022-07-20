@@ -219,6 +219,25 @@ Base.@kwdef mutable struct GaussianPlumeParams
 end
 GaussianPlumeParams(release::ReleaseParams, terrain::Terrain, criteria::PasquillGiffordCriteria) = GaussianPlumeParams(release, terrain, pasquill_gifford(criteria, release.u))
 
+"""
+    $(SIGNATURES)
+Buoyancy flux parameter according to Briggs (1968).
+"""
+buoyancy_flux(gas_density, air_density, stack_radius, gas_velocity) = (1 - gas_density / air_density) * GRAVITY * stack_radius^2 * gas_velocity
+
+"""
+    $(SIGNATURES)
+Plume rise `Δh` [m] according to Briggs (1975) parametrization. `x` is the downwind distance in meter and `u` the downwind velocity in meter/second.
+"""
+function plume_rise(flux_param, x, u) 
+    if flux_param <= 55.
+        xf = 49. * flux_param^(5/8)
+    else
+        xf = 119. * flux_param^(2/5)
+    end
+    1.6 * flux_param^(1/3) * min(x, xf)^(2/3) / u
+end
+
 _yterm(y, sig) = exp(-0.5 * (y / sig)^2)
 _zterm_noreflect(z, σ_z, h) = exp(-0.5 * ((z - h) / σ_z)^2)
 _zterm_reflect(z, σ_z, h) = exp(-0.5 * ((z - h) / σ_z)^2) +  exp(-0.5 * ((z + h) / σ_z)^2)

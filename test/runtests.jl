@@ -24,6 +24,22 @@ end
     @test cground ≈ 201.139895390322 * 1e-6
 end
 
+# Example from reference book "Air Dispersion Modeling - Foundations and Applications, Alex De Visscher, p.31"
+@testset "Plume rise" begin
+    Q = 20 # [m^3/s]
+    ρₐ = 1.17
+    ρₛ = 0.935
+    rₛ = 1.
+    wₛ = Q / (π*rₛ^2)
+    u = 3
+
+    Fb = GaussianPlume.buoyancy_flux(ρₛ, ρₐ, rₛ, wₛ)
+    @test Fb ≈ 12.539 atol=1e-3
+    
+    Δh = GaussianPlume.plume_rise(Fb, 1000., u)
+    @test Δh ≈ 47.589 atol=1e-3
+end
+
 @testset "concentration - multiple classes" begin
     params = GaussianPlumeParams()
     params.stabilities = Stabilities(:A, :B)

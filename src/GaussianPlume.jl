@@ -22,6 +22,8 @@ const BRIGGS_COEFS = [
    -0.5     -0.5     -0.5     -0.5     -0.5     -0.5     1.0  1.0   -0.5     -0.5     -1.0     -1.0     -0.5     -0.5     -0.5     -0.5     0.5    1.0  -0.5     -0.5
 ]
 
+const GRAVITY = 9.80665 
+
 include("helpers.jl")
 include("concentration.jl")
 include("projection.jl")
