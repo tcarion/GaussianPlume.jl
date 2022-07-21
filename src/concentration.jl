@@ -178,9 +178,9 @@ end
 
 Base.@kwdef mutable struct DispersionParams
     "Horizontal dispersion parameter [m]"
-    σ_y::Real = 2.15
+    y::Real = 2.15
     "Vertical dispersion parameter [m]"
-    σ_z::Real = 2.15
+    z::Real = 2.15
 end
 
 """
@@ -194,12 +194,12 @@ DispersionParams(21.89081818461976, 20.0)
 """
 function DispersionParams(x::Real, terrain::Terrain, stability::StabilityClass)
     ycoef, zcoef = getcoeff(terrain, stability)
-    σ_y = disp_function(ycoef...)(x)
-    σ_z = disp_function(zcoef...)(x)
-    DispersionParams(σ_y, σ_z)
+    sigma_y = disp_function(ycoef...)(x)
+    sigma_z = disp_function(zcoef...)(x)
+    DispersionParams(sigma_y, sigma_z)
 end
-Base.:+(d1::DispersionParams, d2::DispersionParams) = DispersionParams(d1.σ_y + d2.σ_y, d1.σ_z + d2.σ_z) 
-Base.:/(d1::DispersionParams, x::Real) = DispersionParams(d1.σ_y / x, d1.σ_z / x) 
+Base.:+(d1::DispersionParams, d2::DispersionParams) = DispersionParams(d1.y + d2.y, d1.z + d2.z) 
+Base.:/(d1::DispersionParams, x::Real) = DispersionParams(d1.y / x, d1.z / x) 
 
 """
     $(TYPEDEF)
@@ -216,6 +216,8 @@ Base.@kwdef mutable struct GaussianPlumeParams
     stabilities::StabilityClasses = Set([A])
     "if ground reflection is considered"
     reflection::Bool = true
+    "height of the mixing layer"
+    hmix::Union{Real, Nothing} = nothing
 end
 GaussianPlumeParams(release::ReleaseParams, terrain::Terrain, criteria::PasquillGiffordCriteria) = GaussianPlumeParams(release, terrain, pasquill_gifford(criteria, release.u))
 
@@ -238,17 +240,16 @@ function plume_rise(flux_param, x, u)
     1.6 * flux_param^(1/3) * min(x, xf)^(2/3) / u
 end
 
-_yterm(y, sig) = exp(-0.5 * (y / sig)^2)
-_zterm_noreflect(z, σ_z, h) = exp(-0.5 * ((z - h) / σ_z)^2)
-_zterm_reflect(z, σ_z, h) = exp(-0.5 * ((z - h) / σ_z)^2) +  exp(-0.5 * ((z + h) / σ_z)^2)
+downwind_mass(Q, u) = Q / u
+gaussian_exp(x, p1, p2) = exp(-0.5 * ((x + p1) / p2)^2)
+crosswind_conc(y, sigma_y) = 1 / sqrt(2pi) / sigma_y * gaussian_exp(y, 0, sigma_y)
+vertical_conc(z, sigma_z, h) = 1 / sqrt(2pi) / sigma_z * sum(gaussian_exp.(z, h, sigma_z))
 function concentration(y, z, disp::DispersionParams = DispersionParams(), release::ReleaseParams = ReleaseParams(); reflection = true)
     h, Q, u = _destruct(release)
-    σ_y = disp.σ_y
-    σ_z = disp.σ_z
-    coef = Q / (2pi * u * σ_y * σ_z)
-    yt = _yterm(y, σ_y)
-    zt = reflection ? _zterm_reflect(z, σ_z, h) : _zterm_noreflect(z, σ_z, h)
-    coef * yt * zt
+    sigma_y = disp.y
+    sigma_z = disp.z
+    hs = reflection ? [h, -h] : -h
+    downwind_mass(Q, u) * crosswind_conc(y, sigma_y) * vertical_conc(z, sigma_z, hs)
 end
 # concentration(ys::AbstractVector, z::Real, release::ReleaseParams; reflection = false) = concentration.(ys, z, Ref(release), reflection = reflection)
 # concentration(y::Real, zs::AbstractVector, release::ReleaseParams; reflection = false) = concentration.(y, zs, Ref(release), reflection = reflection)
