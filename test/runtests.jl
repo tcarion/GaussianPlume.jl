@@ -14,24 +14,24 @@ end
     h = 30
     relpar = ReleaseParams(h = h, Q = 5, u = 2)
 
-    params = GaussianPlumeParams(release = relpar)
+    plume = GaussianPlumeParams(release = relpar)
     
-    params.stabilities = Stabilities(:D)
-    params.reflection = true
+    plume.stabilities = Stabilities(:D)
+    plume.reflection = true
 
-    cground = concentration(1000, 0, 0, params)
-    # caxes = concentration(1000, 0, h, params)
+    cground = plume(1000, 0, 0)
+    # caxes = concentration(1000, 0, h)
     @test cground ≈ 201.139895390322 * 1e-6
 end
 
 @testset "concentration - multiple classes" begin
-    params = GaussianPlumeParams()
-    params.stabilities = Stabilities(:A, :B)
-    cboth= concentration(1000, 0, 0, params)
+    plume = GaussianPlumeParams()
+    plume.stabilities = Stabilities(:A, :B)
+    cboth= plume(1000, 0, 0)
 
-    params.stabilities = Stabilities(:A)
-    ca= concentration(1000, 0, 0, params)
+    plume.stabilities = Stabilities(:A)
+    ca= plume(1000, 0, 0)
 
-    params.stabilities = Stabilities(:B)
-    cb= concentration(1000, 0, 0, params)
+    plume.stabilities = Stabilities(:B)
+    cb= plume(1000, 0, 0)
 end

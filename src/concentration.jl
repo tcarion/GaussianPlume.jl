@@ -219,6 +219,15 @@ Base.@kwdef mutable struct GaussianPlumeParams
 end
 GaussianPlumeParams(release::ReleaseParams, terrain::Terrain, criteria::PasquillGiffordCriteria) = GaussianPlumeParams(release, terrain, pasquill_gifford(criteria, release.u))
 
+"""
+    $(TYPEDSIGNATURES)
+Return the concentration in [g m^{-3}] at some point given the conditions stated in `params`.
+- `x` is the downwind distance from the point source.
+- `y` is the horizontal distance perpendicular to the wind.
+- `z` is the vertical distance from the point source.
+"""
+(plume::GaussianPlumeParams)(x::Real, y::Real, z::Real) = concentration(x, y, z, plume.release, plume.terrain, plume.stabilities; reflection = plume.reflection)
+
 _yterm(y, sig) = exp(-0.5 * (y / sig)^2)
 _zterm_noreflect(z, σ_z, h) = exp(-0.5 * ((z - h) / σ_z)^2)
 _zterm_reflect(z, σ_z, h) = exp(-0.5 * ((z - h) / σ_z)^2) +  exp(-0.5 * ((z + h) / σ_z)^2)
@@ -242,15 +251,15 @@ function concentration(x::Real, y::Real, z::Real, release::ReleaseParams, terrai
     concentration(y, z, disp, release, reflection = reflection)
 end
 
-"""
-    $(TYPEDSIGNATURES)
-Return the concentration in [g m^{-3}] at some point given the conditions stated in `params`.
-- `x` is the downwind distance from the point source.
-- `y` is the horizontal distance perpendicular to the wind.
-- `z` is the vertical distance from the point source.
-"""
-concentration(x::Real, y::Real, z::Real, params::GaussianPlumeParams) = 
-    concentration(x, y, z, params.release, params.terrain, params.stabilities; reflection = params.reflection)
+# """
+#     $(TYPEDSIGNATURES)
+# Return the concentration in [g m^{-3}] at some point given the conditions stated in `params`.
+# - `x` is the downwind distance from the point source.
+# - `y` is the horizontal distance perpendicular to the wind.
+# - `z` is the vertical distance from the point source.
+# """
+# concentration(x::Real, y::Real, z::Real, params::GaussianPlumeParams) = 
+#     concentration(x, y, z, params.release, params.terrain, params.stabilities; reflection = params.reflection)
 
 function _destruct(p::ReleaseParams)
     ntuple(fieldcount(ReleaseParams)) do i
