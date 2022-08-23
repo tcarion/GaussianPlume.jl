@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Proj4 = "9a7e659c-8ee8-5706-894e-f68f43bc57ea"
 
 [compat]

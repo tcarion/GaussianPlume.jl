@@ -2,6 +2,7 @@ module GaussianPlume
 
 using Proj4
 using DocStringExtensions
+using Parameters: @unpack
 
 export ReleaseParams, DispersionParams, GaussianPlumeParams
 export concentration, StabilityClass, Terrain, PasquillGiffordCriteria, pasquill_gifford
@@ -25,6 +26,9 @@ const BRIGGS_COEFS = [
 const GRAVITY = 9.80665 
 
 include("helpers.jl")
+include("parametrization.jl")
+include("parameters.jl")
+include("meteorology.jl")
 include("concentration.jl")
 include("projection.jl")
 
